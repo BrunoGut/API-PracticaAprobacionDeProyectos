@@ -121,6 +121,8 @@ namespace Application.UseCase
                 }
             }
 
+
+            proposal = await _proposalQuery.GetProjectById(proposalId);
             return new StepDecisionResponse
             {
                 Id = proposal.Id,
@@ -163,35 +165,29 @@ namespace Application.UseCase
                     DecisionDate = s.DecisionDate,
                     Observations = s.Observations,
                     ApproverUser = s.User != null
-                        ? new UserResponse
-                        {
-                            Id = s.User.Id,
-                            Name = s.User.Name,
-                            Email = s.User.Email,
-                            Role = s.User.ApproverRole != null
-                                ? new GenericResponse
-                                {
-                                    Id = s.User.Role,
-                                    Name = s.User.ApproverRole.Name
-                                }
-                                : new GenericResponse()
-                        }
-                        : new UserResponse(),
-                    ApproverRole = s.ApproverRole != null
-                        ? new GenericResponse
-                        {
-                            Id = s.ApproverRoleId,
-                            Name = s.ApproverRole.Name
-                        }
-                        : new GenericResponse(),
-                    Status = s.ApprovalStatus != null
-                        ? new GenericResponse
-                        {
-                            Id = s.Status,
-                            Name = s.ApprovalStatus.Name
-                        }
-                        : new GenericResponse()
-                }).ToList()
+        ? new UserResponse
+        {
+            Id = s.User.Id,
+            Name = s.User.Name,
+            Email = s.User.Email,
+            Role = new GenericResponse
+            {
+                Id = s.User.Role,
+                Name = s.User.ApproverRole?.Name ?? "Desconocido"
+            }
+        }
+        : new UserResponse(),
+                    ApproverRole = new GenericResponse
+                    {
+                        Id = s.ApproverRoleId,
+                        Name = s.ApproverRole?.Name ?? "Desconocido"
+                    },
+                    Status = new GenericResponse
+                    {
+                        Id = s.Status,
+                        Name = s.ApprovalStatus?.Name ?? "Desconocido"
+                    }
+                }).ToList(),
             };
         }
     }

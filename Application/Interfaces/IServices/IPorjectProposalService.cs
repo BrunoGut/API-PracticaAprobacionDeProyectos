@@ -10,7 +10,7 @@ namespace Application.Interfaces.IServices
 {
     public interface IPorjectProposalService
     {
-        Task<ProjectProposalResponse> CreateProjectAsync(ProjectProposalRequest request);
+        Task<StepDecisionResponse> CreateProjectAsync(ProjectProposalRequest request);
         Task<List<GetProjectResponse>> GetFilteredProjectsAsync(string? title, int? status, int? applicant, int? approvalUser);
         Task<StepDecisionResponse> UpdateProposalAsync(Guid id, UpdateProjectProposalRequest request);
         Task<StepDecisionResponse> GetProposalDetailByIdAsync(Guid id);

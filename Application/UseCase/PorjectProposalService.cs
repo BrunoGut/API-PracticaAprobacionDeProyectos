@@ -37,7 +37,7 @@ namespace Application.UseCase
             _approvalStatusQuery = approvalStatusQuery;
         }
 
-        public async Task<ProjectProposalResponse> CreateProjectAsync(ProjectProposalRequest request)
+        public async Task<StepDecisionResponse> CreateProjectAsync(ProjectProposalRequest request)
         {
             var existingTitle = await _proposalQuery.GetByTitleAsync(request.Title);
             if (existingTitle != null)
@@ -107,22 +107,34 @@ namespace Application.UseCase
                     .Where(u => u.Role == selectedRule.ApproverRoleId)
                     .ToList();
 
-                if (approvers.Any())
+                if (approvers.Count == 1)
                 {
-                    foreach (var user in approvers)
+                    var singleUser = approvers.First();
+                    steps.Add(new ProjectApprovalStep
                     {
-                        steps.Add(new ProjectApprovalStep
-                        {
-                            Id = GenerateRandomBigIntId(),
-                            ProjectProposalId = proposal.Id,
-                            ApproverRoleId = selectedRule.ApproverRoleId,
-                            ApproverUserId = user.Id,
-                            StepOrder = selectedRule.StepOrder,
-                            Status = 1,
-                            Observations = "Pendiente"
-                        });
-                    }
+                        Id = GenerateRandomBigIntId(),
+                        ProjectProposalId = proposal.Id,
+                        ApproverRoleId = selectedRule.ApproverRoleId,
+                        ApproverUserId = singleUser.Id,
+                        StepOrder = selectedRule.StepOrder,
+                        Status = 1,
+                        Observations = "Pendiente"
+                    });
                 }
+                else if (approvers.Count > 1)
+                {
+                    steps.Add(new ProjectApprovalStep
+                    {
+                        Id = GenerateRandomBigIntId(),
+                        ProjectProposalId = proposal.Id,
+                        ApproverRoleId = selectedRule.ApproverRoleId,
+                        ApproverUserId = null,
+                        StepOrder = selectedRule.StepOrder,
+                        Status = 1,
+                        Observations = "Pendiente (sin usuario asignado)"
+                    });
+                }
+
                 else
                 {
                     steps.Add(new ProjectApprovalStep
@@ -140,27 +152,74 @@ namespace Application.UseCase
 
             await _stepCommand.SaveStepsAsync(steps);
 
-            var response = new ProjectProposalResponse
+            var fullProposal = await _proposalQuery.GetProjectById(proposal.Id);
+
+            return new StepDecisionResponse
             {
-                Id = proposal.Id,
-                Title = proposal.Title,
-                Description = proposal.Description,
-                EstimatedAmount = proposal.EstimatedAmount,
-                EstimatedDuration = proposal.EstimatedDuration,
-                AreaId = proposal.Area,
-                TypeId = proposal.Type,
-                Status = "Pendiente",
-                CreatedAt = proposal.CreateAt,
-                Steps = steps.Select(s => new ProjectApprovalStepResponse
+                Id = fullProposal.Id,
+                Title = fullProposal.Title,
+                Description = fullProposal.Description,
+                Amount = fullProposal.EstimatedAmount,
+                Duration = fullProposal.EstimatedDuration,
+                Area = new GenericResponse
                 {
+                    Id = fullProposal.Area,
+                    Name = fullProposal.ProjectArea?.Name ?? "Área desconocida"
+                },
+                Status = new GenericResponse
+                {
+                    Id = fullProposal.Status,
+                    Name = fullProposal.ApprovalStatus?.Name ?? "Desconocido"
+                },
+                Type = new GenericResponse
+                {
+                    Id = fullProposal.Type,
+                    Name = fullProposal.ProjectType?.Name ?? "Tipo desconocido"
+                },
+                User = new UserResponse
+                {
+                    Id = fullProposal.CreateBy,
+                    Name = fullProposal.User?.Name ?? "Desconocido",
+                    Email = fullProposal.User?.Email ?? "N/A",
+                    Role = fullProposal.User?.ApproverRole != null
+            ? new GenericResponse
+            {
+                Id = fullProposal.User.Role,
+                Name = fullProposal.User.ApproverRole.Name
+            }
+            : new GenericResponse()
+                },
+                Steps = fullProposal.ProjectApprovalSteps.Select(s => new StepResponse
+                {
+                    Id = s.Id.ToString(),
                     StepOrder = s.StepOrder,
-                    ApproverRoleId = s.ApproverRoleId,
-                    ApproverUserId = s.ApproverUserId,
+                    DecisionDate = s.DecisionDate,
                     Observations = s.Observations,
-                    Status = "Pendiente"
+                    ApproverUser = s.User != null
+                        ? new UserResponse
+                        {
+                            Id = s.User.Id,
+                            Name = s.User.Name,
+                            Email = s.User.Email,
+                            Role = new GenericResponse
+                            {
+                                Id = s.User.Role,
+                                Name = s.User.ApproverRole?.Name ?? "Desconocido"
+                            }
+                        }
+                        : null,
+                    ApproverRole = new GenericResponse
+                    {
+                        Id = s.ApproverRoleId,
+                        Name = s.ApproverRole?.Name ?? "Desconocido"
+                    },
+                    Status = new GenericResponse
+                    {
+                        Id = s.Status,
+                        Name = s.ApprovalStatus?.Name ?? "Desconocido"
+                    }
                 }).ToList()
             };
-            return response;
         }
 
         private static System.Numerics.BigInteger GenerateRandomBigIntId()
