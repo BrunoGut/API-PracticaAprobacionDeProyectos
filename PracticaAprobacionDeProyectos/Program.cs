@@ -51,7 +51,20 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 });
 
 
+//CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("PermitirTodo", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
+
+app.UseCors("PermitirTodo");
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
