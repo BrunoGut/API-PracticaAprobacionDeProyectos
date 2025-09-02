@@ -95,12 +95,16 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapGet("/", () => Results.Text("API OK"));
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+//    app.MapGet("/", () => Results.Text("API OK"));
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
+
+app.MapGet("/", () => Results.Text("API OK"));
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
