@@ -26,6 +26,7 @@ namespace Infrastructure.Query
                 .Include(p => p.ProjectType)
                 .Include(p => p.ApprovalStatus)
                 .Include(p => p.ProjectApprovalSteps)
+                .Include(p => p.User)
                 .ToListAsync();
         }
 

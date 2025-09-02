@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace Application.Dtos.Request
 {
-    public class UpdateProjectProposalRequest
+    public class ProjectUpdate
     {
-        public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        public string Title { get; set; }
+        public string Description { get; set; }
         public int Duration { get; set; }
     }
 }

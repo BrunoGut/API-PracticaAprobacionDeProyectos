@@ -18,11 +18,11 @@ namespace Application.UseCase
             _query = query;
         }
 
-        public async Task<List<UserResponse>> GetAllAsync()
+        public async Task<List<Users>> GetAllAsync()
         {
             var users = await _query.GetAllWithRolesAsync();
 
-            return users.Select(u => new UserResponse
+            return users.Select(u => new Users
             {
                 Id = u.Id,
                 Name = u.Name,

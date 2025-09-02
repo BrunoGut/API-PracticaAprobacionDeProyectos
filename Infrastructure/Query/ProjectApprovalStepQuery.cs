@@ -27,7 +27,7 @@ namespace Infrastructure.Query
                 .ToListAsync();
         }
 
-        public async Task<ProjectApprovalStep> GetByIdAsync(BigInteger stepId)
+        public async Task<ProjectApprovalStep> GetByIdAsync(long stepId)
         {
             return await _context.ProjectApprovalSteps
                 .FirstOrDefaultAsync(s => s.Id == stepId);

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250609030220_init")]
+    [Migration("20250701215122_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -27,8 +27,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.ApprovalRule", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<int>("ApproverRoleId")
                         .HasColumnType("int");
@@ -61,7 +64,7 @@ namespace Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "1",
+                            Id = 1L,
                             ApproverRoleId = 1,
                             MaxAmount = 100000m,
                             MinAmount = 0m,
@@ -69,7 +72,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "2",
+                            Id = 2L,
                             ApproverRoleId = 2,
                             MaxAmount = 20000m,
                             MinAmount = 5000m,
@@ -77,7 +80,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "3",
+                            Id = 3L,
                             ApproverRoleId = 2,
                             Area = 2,
                             MaxAmount = 20000m,
@@ -87,7 +90,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "4",
+                            Id = 4L,
                             ApproverRoleId = 3,
                             MaxAmount = 0m,
                             MinAmount = 20000m,
@@ -95,7 +98,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "5",
+                            Id = 5L,
                             ApproverRoleId = 2,
                             Area = 1,
                             MaxAmount = 0m,
@@ -105,7 +108,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "6",
+                            Id = 6L,
                             ApproverRoleId = 1,
                             MaxAmount = 10000m,
                             MinAmount = 0m,
@@ -114,7 +117,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "7",
+                            Id = 7L,
                             ApproverRoleId = 4,
                             Area = 2,
                             MaxAmount = 10000m,
@@ -124,7 +127,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "8",
+                            Id = 8L,
                             ApproverRoleId = 2,
                             Area = 2,
                             MaxAmount = 30000m,
@@ -133,7 +136,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "9",
+                            Id = 9L,
                             ApproverRoleId = 3,
                             Area = 3,
                             MaxAmount = 0m,
@@ -142,7 +145,7 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "10",
+                            Id = 10L,
                             ApproverRoleId = 4,
                             MaxAmount = 50000m,
                             MinAmount = 0m,
@@ -210,7 +213,7 @@ namespace Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            Name = "Líder de Area"
+                            Name = "Líder de Área"
                         },
                         new
                         {
@@ -225,7 +228,7 @@ namespace Infrastructure.Migrations
                         new
                         {
                             Id = 4,
-                            Name = "Comite Técnico"
+                            Name = "Comité Técnico"
                         });
                 });
 
@@ -270,8 +273,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.ProjectApprovalStep", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<int>("ApproverRoleId")
                         .HasColumnType("int");
@@ -280,7 +286,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DecisionDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime");
 
                     b.Property<string>("Observations")
                         .HasColumnType("varchar(max)");
@@ -317,7 +323,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreateAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime");
 
                     b.Property<int>("CreateBy")
                         .HasColumnType("int");
@@ -337,8 +343,7 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");

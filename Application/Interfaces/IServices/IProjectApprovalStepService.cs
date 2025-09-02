@@ -11,6 +11,6 @@ namespace Application.Interfaces.IServices
 {
     public interface IProjectApprovalStepService
     {
-        Task<StepDecisionResponse> ProcessStepDecisionAsync(Guid proposalId, StepDecisionRequest request);  
+        Task<Project> ProcessStepDecisionAsync(Guid proposalId, DecisionStep request);  
     }
 }

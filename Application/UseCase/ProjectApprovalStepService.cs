@@ -31,7 +31,7 @@ namespace Application.UseCase
             _userQuery = userQuery;
         }
 
-        public async Task<StepDecisionResponse> ProcessStepDecisionAsync(Guid proposalId, StepDecisionRequest request)
+        public async Task<Project> ProcessStepDecisionAsync(Guid proposalId, DecisionStep request)
         {
             var proposal = await _proposalQuery.GetProjectById(proposalId);
             if (proposal == null)
@@ -40,10 +40,14 @@ namespace Application.UseCase
             if (proposal.Status != 1 && proposal.Status != 4)
                 throw new ConflictException("El proyecto ya no se encuentra en un estado que permite modificaciones");
 
-            var stepId = request.GetStepId();
+            var stepId = request.Id;
             var currentStep = await _stepQuery.GetByIdAsync(stepId);
-            if (currentStep == null || (currentStep.Status != 1 && currentStep.Status != 4) || currentStep.ProjectProposalId != proposalId)
+            if (currentStep == null || currentStep.ProjectProposalId != proposalId)
                 throw new InvalidDecisionDataException("Datos de decisión inválidos");
+
+            if (currentStep.Status != 1 && currentStep.Status != 4)
+                throw new ConflictException("El proyecto ya no se encuentra en un estado que permite modificaciones");
+
 
             var allSteps = await _stepQuery.GetStepsByProposalAsync(proposalId);
             if (allSteps == null || !allSteps.Any())
@@ -101,17 +105,15 @@ namespace Application.UseCase
             }
             else
             {
-                var remaining = allSteps.Where(s => s.Status == 1 || s.Status == 4).ToList();
-
-                if (remaining.Any())
+                if (allSteps.Any(s => s.Status == 4))
                 {
-                    if (proposal.Status != 1)
+                    if (proposal.Status != 4)
                     {
-                        proposal.Status = 1;
+                        proposal.Status = 4;
                         await _proposalCommand.UpdateProposalStatusAsync(proposal);
                     }
                 }
-                else
+                else if (allSteps.All(s => s.Status == 2))
                 {
                     if (proposal.Status != 2)
                     {
@@ -119,11 +121,19 @@ namespace Application.UseCase
                         await _proposalCommand.UpdateProposalStatusAsync(proposal);
                     }
                 }
+                else if (allSteps.Any(s => s.Status == 1))
+                {
+                    if (proposal.Status != 1)
+                    {
+                        proposal.Status = 1;
+                        await _proposalCommand.UpdateProposalStatusAsync(proposal);
+                    }
+                }
             }
 
 
             proposal = await _proposalQuery.GetProjectById(proposalId);
-            return new StepDecisionResponse
+            return new Project
             {
                 Id = proposal.Id,
                 Title = proposal.Title,
@@ -145,7 +155,7 @@ namespace Application.UseCase
                     Id = proposal.Type,
                     Name = proposal.ProjectType?.Name ?? "Tipo desconocido"
                 },
-                User = new UserResponse
+                User = new Users
                 {
                     Id = proposal.CreateBy,
                     Name = proposal.User?.Name ?? "Desconocido",
@@ -158,36 +168,40 @@ namespace Application.UseCase
                         }
                         : new GenericResponse()
                 },
-                Steps = proposal.ProjectApprovalSteps.Select(s => new StepResponse
+                Steps = proposal.ProjectApprovalSteps.Select(s => new ApprovalStep
                 {
-                    Id = s.Id.ToString(),
+                    Id = s.Id,
                     StepOrder = s.StepOrder,
                     DecisionDate = s.DecisionDate,
                     Observations = s.Observations,
                     ApproverUser = s.User != null
-        ? new UserResponse
-        {
-            Id = s.User.Id,
-            Name = s.User.Name,
-            Email = s.User.Email,
-            Role = new GenericResponse
-            {
-                Id = s.User.Role,
-                Name = s.User.ApproverRole?.Name ?? "Desconocido"
-            }
-        }
-        : new UserResponse(),
-                    ApproverRole = new GenericResponse
+                    ? new Users
+                    {
+                        Id = s.User.Id,
+                                Name = s.User.Name,
+                        Email = s.User.Email,
+                        Role = new GenericResponse
+                        {
+                            Id = s.User.Role,
+                            Name = s.User.ApproverRole?.Name ?? "Desconocido"
+                        }
+                    }
+                    : null,
+                    ApproverRole = s.ApproverRole != null
+                    ? new GenericResponse
                     {
                         Id = s.ApproverRoleId,
-                        Name = s.ApproverRole?.Name ?? "Desconocido"
-                    },
-                    Status = new GenericResponse
+                        Name = s.ApproverRole.Name
+                    }
+                    : new GenericResponse(),
+                    Status = s.ApprovalStatus != null
+                    ? new GenericResponse
                     {
                         Id = s.Status,
-                        Name = s.ApprovalStatus?.Name ?? "Desconocido"
+                        Name = s.ApprovalStatus.Name
                     }
-                }).ToList(),
+                    : new GenericResponse()
+                }).ToList()
             };
         }
     }

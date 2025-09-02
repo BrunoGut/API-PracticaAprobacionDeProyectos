@@ -1,7 +1,6 @@
 ﻿using Application.Dtos.Request;
 using Application.Dtos.Response;
 using Application.Exceptions;
-//using Application.Helpers;
 using Application.Interfaces.ICommand;
 using Application.Interfaces.IQuery;
 using Application.Interfaces.IServices;
@@ -37,21 +36,29 @@ namespace Application.UseCase
             _approvalStatusQuery = approvalStatusQuery;
         }
 
-        public async Task<StepDecisionResponse> CreateProjectAsync(ProjectProposalRequest request)
+        public async Task<Project> CreateProjectAsync(ProjectCreate request)
         {
+            if (string.IsNullOrWhiteSpace(request.Title))
+                throw new InvalidProjectDataException("El título del proyecto es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(request.Description))
+                throw new InvalidProjectDataException("La descripción del proyecto es obligatoria.");
+
             var existingTitle = await _proposalQuery.GetByTitleAsync(request.Title);
             if (existingTitle != null)
                 throw new InvalidProjectDataException("El título del proyecto ya existe.");
 
-            if (request.EstimatedDuration <= 0)
+            if (request.Duration <= 0)
                 throw new InvalidProjectDataException("La duración estimada debe ser mayor a cero.");
 
+            if (request.Amount < 0)
+                throw new InvalidProjectDataException("El monto estimado debe ser mayor a cero.");
 
-            var existingArea = await _areaQuery.GetByIdAsync(request.AreaId);
+            var existingArea = await _areaQuery.GetByIdAsync(request.Area);
             if (existingArea == null)
                 throw new InvalidProjectDataException("Área inválida.");
 
-            var existingType = await _typeQuery.GetByIdAsync(request.TypeId);
+            var existingType = await _typeQuery.GetByIdAsync(request.Type);
             if (existingType == null)
                 throw new InvalidProjectDataException("Tipo inválido.");
 
@@ -64,10 +71,10 @@ namespace Application.UseCase
                 Id = Guid.NewGuid(),
                 Title = request.Title,
                 Description = request.Description,
-                EstimatedAmount = request.EstimatedAmount,
-                EstimatedDuration = request.EstimatedDuration,
-                Area = request.AreaId,
-                Type = request.TypeId,
+                EstimatedAmount = request.Amount,
+                EstimatedDuration = request.Duration,
+                Area = request.Area,
+                Type = request.Type,
                 CreateBy = request.User,
                 CreateAt = DateTime.UtcNow,
                 Status = 1
@@ -112,7 +119,6 @@ namespace Application.UseCase
                     var singleUser = approvers.First();
                     steps.Add(new ProjectApprovalStep
                     {
-                        Id = GenerateRandomBigIntId(),
                         ProjectProposalId = proposal.Id,
                         ApproverRoleId = selectedRule.ApproverRoleId,
                         ApproverUserId = singleUser.Id,
@@ -125,7 +131,6 @@ namespace Application.UseCase
                 {
                     steps.Add(new ProjectApprovalStep
                     {
-                        Id = GenerateRandomBigIntId(),
                         ProjectProposalId = proposal.Id,
                         ApproverRoleId = selectedRule.ApproverRoleId,
                         ApproverUserId = null,
@@ -139,7 +144,6 @@ namespace Application.UseCase
                 {
                     steps.Add(new ProjectApprovalStep
                     {
-                        Id = GenerateRandomBigIntId(),
                         ProjectProposalId = proposal.Id,
                         ApproverRoleId = selectedRule.ApproverRoleId,
                         ApproverUserId = null,
@@ -154,7 +158,7 @@ namespace Application.UseCase
 
             var fullProposal = await _proposalQuery.GetProjectById(proposal.Id);
 
-            return new StepDecisionResponse
+            return new Project
             {
                 Id = fullProposal.Id,
                 Title = fullProposal.Title,
@@ -176,27 +180,28 @@ namespace Application.UseCase
                     Id = fullProposal.Type,
                     Name = fullProposal.ProjectType?.Name ?? "Tipo desconocido"
                 },
-                User = new UserResponse
+                User = new Users
                 {
                     Id = fullProposal.CreateBy,
                     Name = fullProposal.User?.Name ?? "Desconocido",
                     Email = fullProposal.User?.Email ?? "N/A",
                     Role = fullProposal.User?.ApproverRole != null
-            ? new GenericResponse
-            {
-                Id = fullProposal.User.Role,
-                Name = fullProposal.User.ApproverRole.Name
-            }
-            : new GenericResponse()
+                    ? new GenericResponse
+                    {
+                        Id = fullProposal.User.Role,
+                        Name = fullProposal.User.ApproverRole.Name
+                    }
+                    : new GenericResponse()
                 },
-                Steps = fullProposal.ProjectApprovalSteps.Select(s => new StepResponse
+                
+                Steps = fullProposal.ProjectApprovalSteps.Select(s => new ApprovalStep
                 {
-                    Id = s.Id.ToString(),
+                    Id = s.Id,
                     StepOrder = s.StepOrder,
                     DecisionDate = s.DecisionDate,
                     Observations = s.Observations,
                     ApproverUser = s.User != null
-                        ? new UserResponse
+                        ? new Users
                         {
                             Id = s.User.Id,
                             Name = s.User.Name,
@@ -222,15 +227,7 @@ namespace Application.UseCase
             };
         }
 
-        private static System.Numerics.BigInteger GenerateRandomBigIntId()
-        {
-            var random = new Random();
-            byte[] bytes = new byte[16];
-            random.NextBytes(bytes);
-            return new System.Numerics.BigInteger(bytes);
-        }
-
-        public async Task<List<GetProjectResponse>> GetFilteredProjectsAsync(string? title, int? status, int? applicant, int? approvalUser)
+        public async Task<List<ProjectShort>> GetFilteredProjectsAsync(string? title, int? status, int? applicant, int? approvalUser)
         {
             if (status.HasValue)
             {
@@ -280,7 +277,7 @@ namespace Application.UseCase
                     .ToList();
             }
 
-            return proposals.Select(p => new GetProjectResponse
+            return proposals.Select(p => new ProjectShort
             {
                 Id = p.Id,
                 Title = p.Title,
@@ -294,7 +291,7 @@ namespace Application.UseCase
         }
 
 
-        public async Task<StepDecisionResponse> UpdateProposalAsync(Guid id, UpdateProjectProposalRequest request)
+        public async Task<Project> UpdateProposalAsync(Guid id, ProjectUpdate request)
         {
             var proposal = await _proposalQuery.GetProjectById(id);
             if (proposal == null)
@@ -302,6 +299,13 @@ namespace Application.UseCase
 
             if (proposal.Status != 4)
                 throw new ConflictException("El proyecto ya no se encuentra en un estado que permite modificaciones");
+
+            if (!string.IsNullOrWhiteSpace(request.Title))
+            {
+                var existing = await _proposalQuery.GetByTitleAsync(request.Title);
+                if (existing != null && existing.Id != proposal.Id)
+                    throw new InvalidProjectDataException("El título del proyecto ya existe.");
+            }
 
             if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description) || request.Duration <= 0)
                 throw new InvalidDecisionDataException("Datos de actualización inválidos");
@@ -313,7 +317,7 @@ namespace Application.UseCase
             await _proposalCommand.UpdateProposalStatusAsync(proposal);
 
             
-            return new StepDecisionResponse
+            return new Project
             {
                 Id = proposal.Id,
                 Title = proposal.Title,
@@ -335,7 +339,7 @@ namespace Application.UseCase
                     Id = proposal.Type,
                     Name = proposal.ProjectType?.Name ?? "Tipo desconocido"
                 },
-                User = new UserResponse
+                User = new Users
                 {
                     Id = proposal.CreateBy,
                     Name = proposal.User?.Name ?? "Desconocido",
@@ -348,27 +352,33 @@ namespace Application.UseCase
                         }
                         : new GenericResponse()
                 },
-                Steps = proposal.ProjectApprovalSteps.Select(s => new StepResponse
+                Steps = proposal.ProjectApprovalSteps.Select(s => new ApprovalStep
                 {
-                    Id = s.Id.ToString(),
+                    Id = s.Id,
                     StepOrder = s.StepOrder,
                     DecisionDate = s.DecisionDate,
                     Observations = s.Observations,
                     ApproverUser = s.User != null
-                        ? new UserResponse
-                        {
-                            Id = s.User.Id,
-                            Name = s.User.Name,
-                            Email = s.User.Email,
-                            Role = s.User.ApproverRole != null
-                                ? new GenericResponse
-                                {
-                                    Id = s.User.Role,
-                                    Name = s.User.ApproverRole.Name
-                                }
-                                : new GenericResponse()
-                        }
-                        : new UserResponse(),
+                    ? new Users
+                    {
+                        Id = s.User.Id,
+                                    Name = s.User.Name ?? string.Empty,
+                        Email = s.User.Email ?? string.Empty,
+                        Role = s.User.ApproverRole != null
+                            ? new GenericResponse
+                            {
+                                Id = s.User.Role,
+                                Name = s.User.ApproverRole.Name ?? "Desconocido"
+                            }
+                            : new GenericResponse()
+                    }
+                    : new Users
+                    {
+                        Id = 0,
+                        Name = string.Empty,
+                        Email = string.Empty,
+                        Role = new GenericResponse()
+                    },
                     ApproverRole = s.ApproverRole != null
                         ? new GenericResponse
                         {
@@ -387,13 +397,13 @@ namespace Application.UseCase
             };
         }
 
-        public async Task<StepDecisionResponse> GetProposalDetailByIdAsync(Guid id)
+        public async Task<Project> GetProposalDetailByIdAsync(Guid id)
         {
             var proposal = await _proposalQuery.GetProjectById(id);
             if (proposal == null)
                 throw new NotFoundException("Proyecto no encontrado");
 
-            return new StepDecisionResponse
+            return new Project
             {
                 Id = proposal.Id,
                 Title = proposal.Title,
@@ -415,7 +425,7 @@ namespace Application.UseCase
                     Id = proposal.Type,
                     Name = proposal.ProjectType?.Name ?? "Tipo desconocido"
                 },
-                User = new UserResponse
+                User = new Users
                 {
                     Id = proposal.CreateBy,
                     Name = proposal.User?.Name ?? "Desconocido",
@@ -428,27 +438,26 @@ namespace Application.UseCase
                         }
                         : new GenericResponse()
                 },
-                Steps = proposal.ProjectApprovalSteps.Select(s => new StepResponse
+                Steps = proposal.ProjectApprovalSteps.Select(s => new ApprovalStep
                 {
-                    Id = s.Id.ToString(),
+                    Id = s.Id,
                     StepOrder = s.StepOrder,
                     DecisionDate = s.DecisionDate,
                     Observations = s.Observations,
                     ApproverUser = s.User != null
-                        ? new UserResponse
+                    ? new Users
+                    {
+                        Id = s.User.Id,
+                        Name = s.User.Name,
+                        Email = s.User.Email,
+                        Role = new GenericResponse
                         {
-                            Id = s.User.Id,
-                            Name = s.User.Name,
-                            Email = s.User.Email,
-                            Role = s.User.ApproverRole != null
-                                ? new GenericResponse
-                                {
-                                    Id = s.User.Role,
-                                    Name = s.User.ApproverRole.Name
-                                }
-                                : new GenericResponse()
+                            Id = s.User.Role,
+                            Name = s.User.ApproverRole?.Name ?? "Desconocido"
                         }
-                        : new UserResponse(),
+                    }
+                    : null,
+
                     ApproverRole = s.ApproverRole != null
                         ? new GenericResponse
                         {

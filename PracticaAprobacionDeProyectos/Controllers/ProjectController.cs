@@ -1,4 +1,6 @@
 ﻿using Application.Dtos.Request;
+using Application.Dtos.Response;
+using Application.Exceptions;
 using Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,42 +21,108 @@ namespace PracticaAprobacionDeProyectos.Controllers
         }
 
         [HttpGet("Project")]
-        public async Task<IActionResult> GetProjects(
-        [FromQuery] string? title,
-        [FromQuery] int? status,
-        [FromQuery] int? applicant,
-        [FromQuery] int? approvalUser)
+        [ProducesResponseType(typeof(List<ProjectShort>), 200)]
+        [ProducesResponseType(typeof(ApiError), 400)]
+        public async Task<IActionResult> GetProjects([FromQuery] string? title, [FromQuery] int? status, [FromQuery] int? applicant, [FromQuery] int? approvalUser)
         {
-            var result = await _proposalService.GetFilteredProjectsAsync(title, status, applicant, approvalUser);
-            return Ok(result);
+            try
+            {
+                var result = await _proposalService.GetFilteredProjectsAsync(title, status, applicant, approvalUser);
+                return Ok(result);
+            }
+            catch (InvalidFilterParameterException ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
+            }
         }
 
         [HttpPost("Project")]
-        public async Task<IActionResult> CreateProject([FromBody] ProjectProposalRequest request)
+        [ProducesResponseType(typeof(Project), 201)]
+        [ProducesResponseType(typeof(ApiError), 400)]
+        public async Task<IActionResult> CreateProject([FromBody] ProjectCreate request)
         {
-            var result = await _proposalService.CreateProjectAsync(request);
-            return StatusCode(201, result);
+            try
+            {
+                var result = await _proposalService.CreateProjectAsync(request);
+                return StatusCode(201, result);
+            }
+            catch (InvalidProjectDataException ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
+            }
         }
 
         [HttpPatch("Project/{id}/decision")]
-        public async Task<IActionResult> PatchDecision(Guid id, [FromBody] StepDecisionRequest request)
+        [ProducesResponseType(typeof(Project), 200)]
+        [ProducesResponseType(typeof(ApiError), 400)]
+        [ProducesResponseType(typeof(ApiError), 404)]
+        [ProducesResponseType(typeof(ApiError), 409)]
+        public async Task<IActionResult> PatchDecision(Guid id, [FromBody] DecisionStep request)
         {
-            var updated = await _approvalStepService.ProcessStepDecisionAsync(id, request);
-            return Ok(updated);
+            try
+            {
+                var updated = await _approvalStepService.ProcessStepDecisionAsync(id, request);
+                return Ok(updated);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new ApiError { Message = ex.Message });
+            }
+            catch (ConflictException ex)
+            {
+                return Conflict(new ApiError { Message = ex.Message });
+            }
+            catch (InvalidDecisionDataException ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
+            }
         }
 
         [HttpPatch("Project/{id}")]
-        public async Task<IActionResult> UpdateProject(Guid id, [FromBody] UpdateProjectProposalRequest request)
+        [ProducesResponseType(typeof(Project), 200)]
+        [ProducesResponseType(typeof(ApiError), 400)]
+        [ProducesResponseType(typeof(ApiError), 404)]
+        [ProducesResponseType(typeof(ApiError), 409)]
+        public async Task<IActionResult> UpdateProject(Guid id, [FromBody] ProjectUpdate request)
         {
-            var result = await _proposalService.UpdateProposalAsync(id, request);
-            return Ok(result);
+            try
+            {
+                var result = await _proposalService.UpdateProposalAsync(id, request);
+                return Ok(result);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new ApiError { Message = ex.Message });
+            }
+            catch (ConflictException ex)
+            {
+                return Conflict(new ApiError { Message = ex.Message });
+            }
+            catch (InvalidDecisionDataException ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
+            }
         }
 
         [HttpGet("Project/{id}")]
+        [ProducesResponseType(typeof(Project), 200)]
+        [ProducesResponseType(typeof(ApiError), 400)]
+        [ProducesResponseType(typeof(ApiError), 404)]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var result = await _proposalService.GetProposalDetailByIdAsync(id);
-            return Ok(result);
+            try
+            {
+                var result = await _proposalService.GetProposalDetailByIdAsync(id);
+                return Ok(result);
+            }
+            catch (InvalidDecisionDataException ex)
+            {
+                return BadRequest(new ApiError { Message=ex.Message});
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new ApiError { Message = ex.Message});
+            }
         }
     }
 }

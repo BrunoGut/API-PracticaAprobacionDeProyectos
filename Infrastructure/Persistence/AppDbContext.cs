@@ -1,5 +1,5 @@
 ﻿using Domain.Entities;
-using Infraestructure.Configurations;
+using Infrastructure.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System;
@@ -30,7 +30,7 @@ namespace Infrastructure.Persistence
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=DESKTOP-O1PN00U\\SQLEXPRESS;Database=ADP_DB;Trusted_Connection=True;TrustServerCertificate=True;");
+            optionsBuilder.UseSqlServer("Server=DESKTOP-O1PN00U\\SQLEXPRESS;Database=AprobacionProyectosDB;Trusted_Connection=True;TrustServerCertificate=True;");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -39,8 +39,8 @@ namespace Infrastructure.Persistence
             {
                 entity.ToTable("Area");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired()
-                .HasColumnType("varchar(25)");
+                entity.Property(e => e.Id).HasColumnType("int").IsRequired();
+                entity.Property(e => e.Name).IsRequired().HasColumnType("varchar(25)");
                 //relacion con ApprovalRule
                 entity.HasMany(e => e.ApprovalRules)
                 .WithOne(ar => ar.ProjectArea)
@@ -56,8 +56,8 @@ namespace Infrastructure.Persistence
             {
                 entity.ToTable("ProjectType");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired()
-                .HasColumnType("varchar(25)");
+                entity.Property(e => e.Id).HasColumnType("int").IsRequired();
+                entity.Property(e => e.Name).HasColumnType("varchar(25)").IsRequired();
                 //relacion con ApprovalRule
                 entity.HasMany(e => e.ApprovalRules)
                 .WithOne(ar => ar.ProjectType)
@@ -73,8 +73,8 @@ namespace Infrastructure.Persistence
             {
                 entity.ToTable("ApprovalStatus");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired()
-                .HasColumnType("varchar(25)");
+                entity.Property(e => e.Id).HasColumnType("int").IsRequired();
+                entity.Property(e => e.Name).HasColumnType("varchar(25)").IsRequired();
                 //relacion con ProjectProposal
                 entity.HasMany(e => e.ProjectProposals)
                 .WithOne(pp => pp.ApprovalStatus)
@@ -90,8 +90,8 @@ namespace Infrastructure.Persistence
             {
                 entity.ToTable("ApproverRole");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired()
-                .HasColumnType("varchar(25)");
+                entity.Property(e => e.Id).HasColumnType("int").IsRequired();
+                entity.Property(e => e.Name).HasColumnType("varchar(25)").IsRequired();
                 //relacion con ProjectApprovalStep
                 entity.HasMany(e => e.ProjectApprovalSteps)
                 .WithOne(pas => pas.ApproverRole)
@@ -111,10 +111,9 @@ namespace Infrastructure.Persistence
             {
                 entity.ToTable("User");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired()
-                .HasColumnType("varchar(25)");
-                entity.Property(e => e.Email).IsRequired()
-                .HasColumnType("varchar(100)");
+                entity.Property(e => e.Id).HasColumnType("int").IsRequired();
+                entity.Property(e => e.Name).HasColumnType("varchar(25)").IsRequired();
+                entity.Property(e => e.Email).HasColumnType("varchar(100)").IsRequired();
                 //relacion con ProjectProposal
                 entity.HasMany(e => e.ProjectProposals)
                 .WithOne(pp => pp.User)
@@ -127,18 +126,17 @@ namespace Infrastructure.Persistence
             });
             modelBuilder.ApplyConfiguration(new UserConfiguration());
 
-            var bigIntToStringConverter = new ValueConverter<BigInteger, string>(
-                v => v.ToString(),
-                v => BigInteger.Parse(v));
             modelBuilder.Entity<ApprovalRule>(entity =>
             {
                 entity.ToTable("ApprovalRule");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasConversion(bigIntToStringConverter);
+                entity.Property(e => e.Id).HasColumnType("bigint")
+                .ValueGeneratedOnAdd().IsRequired();
                 entity.Property(e => e.MinAmount).IsRequired()
                 .HasColumnType("decimal(18,2)");
                 entity.Property(e => e.MaxAmount).IsRequired()
                 .HasColumnType("decimal(18,2)");
+                entity.Property(e => e.StepOrder).HasColumnType("int").IsRequired();
                 //relacion con Area
                 entity.HasOne(e => e.ProjectArea)
                 .WithMany(a => a.ApprovalRules)
@@ -155,35 +153,38 @@ namespace Infrastructure.Persistence
                 .HasForeignKey(e => e.ApproverRoleId).IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
             });
-            modelBuilder.ApplyConfiguration(new ApprovalRuleconfiguration());
+            modelBuilder.ApplyConfiguration(new ApprovalRuleConfiguration());
 
             modelBuilder.Entity<ProjectProposal>(entity =>
             {
                 entity.ToTable("ProjectProposal");
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnType("uniqueidentifier")
+                .ValueGeneratedOnAdd().IsRequired();
                 entity.Property(e => e.Title).IsRequired()
-                .HasColumnType("varchar").HasMaxLength(255);
+                .HasColumnType("varchar(255)");
                 entity.Property(e => e.Description).IsRequired()
                 .HasColumnType("varchar(max)");
+                entity.Property(e => e.CreateAt).HasColumnType("datetime").IsRequired();
                 //relacion con Area
                 entity.HasOne(e => e.ProjectArea)
                 .WithMany(a => a.ProjectProposals)
-                .HasForeignKey(e => e.Area)
+                .HasForeignKey(e => e.Area).IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
                 //relacion con ProjectType
                 entity.HasOne(e => e.ProjectType)
                 .WithMany(pt => pt.ProjectProposals)
-                .HasForeignKey(e => e.Type)
+                .HasForeignKey(e => e.Type).IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
                 //relacion con ApprovalStatus
                 entity.HasOne(e => e.ApprovalStatus)
                 .WithMany(aps => aps.ProjectProposals)
-                .HasForeignKey(e => e.Status)
+                .HasForeignKey(e => e.Status).IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
                 //relacion con User
                 entity.HasOne(e => e.User)
                 .WithMany(u => u.ProjectProposals)
-                .HasForeignKey(e => e.CreateBy)
+                .HasForeignKey(e => e.CreateBy).IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -191,9 +192,9 @@ namespace Infrastructure.Persistence
             {
                 entity.ToTable("ProjectApprovalStep");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasConversion(bigIntToStringConverter);
-                entity.Property(e => e.StepOrder).IsRequired();
-                entity.Property(e => e.DecisionDate);
+                entity.Property(e => e.Id).IsRequired().ValueGeneratedOnAdd();
+                entity.Property(e => e.StepOrder).IsRequired().HasColumnType("int");
+                entity.Property(e => e.DecisionDate).HasColumnType("datetime");
                 entity.Property(e => e.Observations).HasColumnType("varchar(max)");
                 //relacion con ProjectProposal
                 entity.HasOne(e => e.ProjectProposal)

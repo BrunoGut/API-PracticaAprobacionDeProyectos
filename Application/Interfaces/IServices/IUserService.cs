@@ -9,6 +9,6 @@ namespace Application.Interfaces.IServices
 {
     public interface IUserService
     {
-        Task<List<UserResponse>> GetAllAsync();
+        Task<List<Users>> GetAllAsync();
     }
 }

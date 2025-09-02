@@ -90,7 +90,8 @@ namespace Infrastructure.Migrations
                 name: "ApprovalRule",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     MinAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     MaxAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     StepOrder = table.Column<int>(type: "int", nullable: false),
@@ -126,11 +127,11 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false),
+                    Title = table.Column<string>(type: "varchar(255)", nullable: false),
                     Description = table.Column<string>(type: "varchar(max)", nullable: false),
                     EstimatedAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     EstimatedDuration = table.Column<int>(type: "int", nullable: false),
-                    CreateAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreateAt = table.Column<DateTime>(type: "datetime", nullable: false),
                     Area = table.Column<int>(type: "int", nullable: false),
                     Type = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
@@ -169,9 +170,10 @@ namespace Infrastructure.Migrations
                 name: "ProjectApprovalStep",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     StepOrder = table.Column<int>(type: "int", nullable: false),
-                    DecisionDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DecisionDate = table.Column<DateTime>(type: "datetime", nullable: true),
                     Observations = table.Column<string>(type: "varchar(max)", nullable: true),
                     ProjectProposalId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ApproverUserId = table.Column<int>(type: "int", nullable: true),
@@ -223,10 +225,10 @@ namespace Infrastructure.Migrations
                 columns: new[] { "Id", "Name" },
                 values: new object[,]
                 {
-                    { 1, "Líder de Area" },
+                    { 1, "Líder de Área" },
                     { 2, "Gerente" },
                     { 3, "Director" },
-                    { 4, "Comite Técnico" }
+                    { 4, "Comité Técnico" }
                 });
 
             migrationBuilder.InsertData(
@@ -256,16 +258,16 @@ namespace Infrastructure.Migrations
                 columns: new[] { "Id", "ApproverRoleId", "Area", "MaxAmount", "MinAmount", "StepOrder", "Type" },
                 values: new object[,]
                 {
-                    { "1", 1, null, 100000m, 0m, 1, null },
-                    { "10", 4, null, 50000m, 0m, 1, 4 },
-                    { "2", 2, null, 20000m, 5000m, 2, null },
-                    { "3", 2, 2, 20000m, 0m, 1, 2 },
-                    { "4", 3, null, 0m, 20000m, 3, null },
-                    { "5", 2, 1, 0m, 5000m, 2, 1 },
-                    { "6", 1, null, 10000m, 0m, 1, 2 },
-                    { "7", 4, 2, 10000m, 0m, 1, 1 },
-                    { "8", 2, 2, 30000m, 10000m, 2, null },
-                    { "9", 3, 3, 0m, 30000m, 2, null }
+                    { 1L, 1, null, 100000m, 0m, 1, null },
+                    { 2L, 2, null, 20000m, 5000m, 2, null },
+                    { 3L, 2, 2, 20000m, 0m, 1, 2 },
+                    { 4L, 3, null, 0m, 20000m, 3, null },
+                    { 5L, 2, 1, 0m, 5000m, 2, 1 },
+                    { 6L, 1, null, 10000m, 0m, 1, 2 },
+                    { 7L, 4, 2, 10000m, 0m, 1, 1 },
+                    { 8L, 2, 2, 30000m, 10000m, 2, null },
+                    { 9L, 3, 3, 0m, 30000m, 2, null },
+                    { 10L, 4, null, 50000m, 0m, 1, 4 }
                 });
 
             migrationBuilder.InsertData(

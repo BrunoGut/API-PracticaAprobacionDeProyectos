@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Application.Dtos.Response
 {
-    public class UserResponse
+    public class Users
     {
         public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public GenericResponse Role { get; set; } = new();
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public GenericResponse Role { get; set; }
     }
 }

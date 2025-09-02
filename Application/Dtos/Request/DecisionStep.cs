@@ -7,13 +7,11 @@ using System.Threading.Tasks;
 
 namespace Application.Dtos.Request
 {
-    public class StepDecisionRequest
+    public class DecisionStep
     {
-        public string Id { get; set; } = string.Empty;
+        public long Id { get; set; }
         public int User { get; set; }
         public int Status { get; set; }
-        public string Observation { get; set; } = string.Empty;
-
-        public BigInteger GetStepId() => BigInteger.Parse(Id);
+        public string Observation { get; set; }
     }
 }

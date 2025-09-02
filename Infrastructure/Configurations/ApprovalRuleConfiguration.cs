@@ -7,9 +7,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Infraestructure.Configurations
+namespace Infrastructure.Configurations
 {
-    public class ApprovalRuleconfiguration : IEntityTypeConfiguration<ApprovalRule>
+    public class ApprovalRuleConfiguration : IEntityTypeConfiguration<ApprovalRule>
     {
         public void Configure(EntityTypeBuilder<ApprovalRule> builder)
         {
@@ -26,6 +26,5 @@ namespace Infraestructure.Configurations
                 new ApprovalRule { Id = 10, MinAmount = 0, MaxAmount = 50000, Area = null, Type = 4, StepOrder = 1, ApproverRoleId = 4 }
             );
         }
-
     }
 }

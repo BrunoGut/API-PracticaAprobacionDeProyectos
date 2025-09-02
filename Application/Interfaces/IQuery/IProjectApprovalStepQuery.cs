@@ -11,6 +11,6 @@ namespace Application.Interfaces.IQuery
     public interface IProjectApprovalStepQuery
     {
         Task<List<ProjectApprovalStep>> GetStepsByProposalAsync(Guid proposalId);
-        Task<ProjectApprovalStep> GetByIdAsync(BigInteger stepId);
+        Task<ProjectApprovalStep> GetByIdAsync(long stepId);
     }
 }

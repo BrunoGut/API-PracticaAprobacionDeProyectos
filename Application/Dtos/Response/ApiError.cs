@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace Application.Dtos.Response
 {
-    public class GenericResponse
+    public class ApiError
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
+        public string Message { get; set; }
     }
 }
