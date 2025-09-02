@@ -77,10 +77,16 @@ builder.Services.AddCors(o => o.AddPolicy("FrontendOnly", p =>
 var app = builder.Build();
 
 //migraciones al inicio
-using (var scope = app.Services.CreateScope())
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Migration failed at startup");
 }
 
 app.UseCors("FrontendOnly");
