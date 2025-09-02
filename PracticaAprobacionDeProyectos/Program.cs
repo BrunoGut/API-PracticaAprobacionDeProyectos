@@ -21,8 +21,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 //Custom
-var connectionString = builder.Configuration["ConnectionStrings"];
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+//local
+//var connectionString = builder.Configuration["ConnectionStrings"];
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+
+//prod
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IPorjectProposalService, PorjectProposalService>();
 builder.Services.AddScoped<IProjectApprovalStepService, ProjectApprovalStepService>();
@@ -52,19 +57,33 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 
 //CORS
-builder.Services.AddCors(options =>
+var rawOrigins = Environment.GetEnvironmentVariable("CORS__ORIGINS") ?? "";
+var allowed = rawOrigins.Split(';', StringSplitOptions.RemoveEmptyEntries);
+builder.Services.AddCors(o => o.AddPolicy("FrontendOnly", p =>
 {
-    options.AddPolicy("PermitirTodo", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
+    if (allowed.Length > 0) p.WithOrigins(allowed).AllowAnyHeader().AllowAnyMethod();
+    else p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod(); // fallback dev
+}));
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("PermitirTodo", policy =>
+//    {
+//        policy.AllowAnyOrigin()
+//              .AllowAnyHeader()
+//              .AllowAnyMethod();
+//    });
+//});
 
 var app = builder.Build();
 
-app.UseCors("PermitirTodo");
+//migraciones al inicio
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
+app.UseCors("FrontendOnly");
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
